@@ -23,6 +23,7 @@ namespace TestMessageCombinations
                 new Message("D8", "PaymentPlanNewChargesCycle3")
             };
 
+            // contains all possible messages (Goal + message area)
             List<Message> Messages = new List<Message>();
 
             foreach (string goal in Goals)
@@ -43,11 +44,13 @@ namespace TestMessageCombinations
                 Console.WriteLine(message);
                 
             }
-            Console.WriteLine("Total number of messages: " + Messages.Count);
+            Console.WriteLine("Total number of possible messages: " + Messages.Count);
             Console.ReadLine();
 
+            // contains all possible statement layouts--impossible layouts will be removed later based on rules
             List<StatementLayout> PossibleLayouts = new List<StatementLayout>();
 
+            
             List<Message> D4Messages = new List<Message>();
             D4Messages.AddRange(Messages.Where(x => x.MessageArea == "D4"));
 
@@ -57,6 +60,8 @@ namespace TestMessageCombinations
             List<Message> D9Messages = new List<Message>();
             D9Messages.AddRange(Messages.Where(x => x.MessageArea == "D9"));
 
+
+            //TODO: figure out a better way to come up with all possible layouts
             foreach(Message d4 in D4Messages)
             {
                 foreach(Message d8 in D8Messages)
@@ -72,6 +77,8 @@ namespace TestMessageCombinations
                     }
                 }
             }
+
+            // get rid of any layouts that are impossible
             RemoveImpossibleLayouts(PossibleLayouts);
 
             foreach(StatementLayout s in PossibleLayouts)
@@ -81,6 +88,7 @@ namespace TestMessageCombinations
             Console.WriteLine("Total number of statement layouts: " + PossibleLayouts.Count());
             Console.ReadLine();
 
+            // output the layout report
             WriteToCsv(PossibleLayouts);
 
         }
@@ -96,6 +104,7 @@ namespace TestMessageCombinations
                 { "CharityCare", 5 },
                 { "PatientPortal", 6 },
                 { "Default", 7 },
+                { "PaymentPlanQR", 0 },
                 { "PaymentPlanQRCycle2", 0 },
                 { "PaymentPlanQRCycle3", 0 },
                 { "PaymentPlanNewCharges", 0 },
@@ -113,12 +122,14 @@ namespace TestMessageCombinations
             };
 
 
-            // Check for repeated messages
+            // Check for repeated messages (except for AvoidCollections and Default--those can have repeats)
             for (int index = 0; index < possibleLayouts.Count; index++)
             {
                 StatementLayout s = possibleLayouts[index];
                 List<Message> messageList = s.GetMessages();
-                var duplicateMessageQuery = messageList.GroupBy(x => x.Goal).Select(n => new { MessageName = n.Key, MessageCount = n.Count() }).Where(y => y.MessageCount > 1 && y.MessageName != "AvoidCollections" && y.MessageName != "Default");
+                var duplicateMessageQuery = messageList.GroupBy(x => x.Goal)
+                    .Select(n => new { MessageName = n.Key, MessageCount = n.Count() })
+                    .Where(y => y.MessageCount > 1 && y.MessageName != "AvoidCollections" && y.MessageName != "Default");
                 
                 if(duplicateMessageQuery.Count() > 0)
                 {
@@ -127,7 +138,8 @@ namespace TestMessageCombinations
                 }
             }
 
-            // Check for mismatched rankings
+            // Check for mismatched rankings -- the messages in each area have to be ranked appropriately.
+            
             for (int index = 0; index < possibleLayouts.Count; index++)
             {
                 bool isBadLayout = false;
@@ -145,9 +157,33 @@ namespace TestMessageCombinations
                 int d4MessageRank = GoalRankings[d4MessageGoal];
 
                 //check if other message areas have a lower-ranked message in their areas
-                if (d4MessageRank <= d8MessageRank || d9MessageRank <= d4MessageRank || d9MessageRank <= d8MessageRank)
+                // D8 is highest rank, then D4, then D9. 
+                if (d4MessageRank < d8MessageRank || d9MessageRank < d4MessageRank || d9MessageRank < d8MessageRank)
                 {
                     isBadLayout = true;
+                }
+
+                //check for avoidcollections inconsistencies
+                if (d4MessageGoal == "AvoidCollections" || d8MessageGoal == "AvoidCollections" || d9MessageGoal == "AvoidCollections")
+                {
+                    //if avoidcollections is in D8, then everything else has to be AvoidCollections (repeated messages)
+                    if (d8MessageGoal == "AvoidCollections" && (d4MessageGoal != "AvoidCollections" || d9MessageGoal != "AvoidCollections"))
+                    {
+                        isBadLayout = true;
+                    }
+
+                    //if avoidcollections is in D4, then D9 has to be avoidcollections (repeated messages)
+                    else if(d4MessageGoal == "AvoidCollections" && d9MessageGoal != "AvoidCollections")
+                    {
+                        isBadLayout = true;
+                    }
+
+                    // can't have cycle 1 or 2 D8 ads at the same time as avoidcollections
+                    List<string> Cycle1And2Goals = new List<string>() { "PaymentPlanQR", "PaymentPlanQRCycle2", "PaymentPlanNewCharges", "PaymentPlanNewChargesCycle2" };
+                    if (Cycle1And2Goals.Contains(d8MessageGoal))
+                    {
+                        isBadLayout = true;
+                    }
                 }
 
                 if (isBadLayout)
@@ -157,8 +193,11 @@ namespace TestMessageCombinations
                 }
 
             }
+
+            
         }
 
+        // Throw a report on the desktop with all possible statement layouts
         private static void WriteToCsv(List<StatementLayout> possibleLayouts)
         {
             string path = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "\\PossibleMessagesReport.csv";
