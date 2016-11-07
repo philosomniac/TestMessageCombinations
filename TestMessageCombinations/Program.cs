@@ -129,7 +129,7 @@ namespace TestMessageCombinations
                 List<Message> messageList = s.GetMessages();
                 var duplicateMessageQuery = messageList.GroupBy(x => x.Goal)
                     .Select(n => new { MessageName = n.Key, MessageCount = n.Count() })
-                    .Where(y => y.MessageCount > 1 && y.MessageName != "AvoidCollections" && y.MessageName != "Default");
+                    .Where(y => y.MessageCount > 1 /*&& y.MessageName != "AvoidCollections"*/ && y.MessageName != "Default");
                 
                 if(duplicateMessageQuery.Count() > 0)
                 {
@@ -166,17 +166,17 @@ namespace TestMessageCombinations
                 //check for avoidcollections inconsistencies
                 if (d4MessageGoal == "AvoidCollections" || d8MessageGoal == "AvoidCollections" || d9MessageGoal == "AvoidCollections")
                 {
-                    //if avoidcollections is in D8, then everything else has to be AvoidCollections (repeated messages)
-                    if (d8MessageGoal == "AvoidCollections" && (d4MessageGoal != "AvoidCollections" || d9MessageGoal != "AvoidCollections"))
-                    {
-                        isBadLayout = true;
-                    }
+                    ////if avoidcollections is in D8, then everything else has to be AvoidCollections (repeated messages)
+                    //if (d8MessageGoal == "AvoidCollections" && (d4MessageGoal != "AvoidCollections" || d9MessageGoal != "AvoidCollections"))
+                    //{
+                    //    isBadLayout = true;
+                    //}
 
-                    //if avoidcollections is in D4, then D9 has to be avoidcollections (repeated messages)
-                    else if(d4MessageGoal == "AvoidCollections" && d9MessageGoal != "AvoidCollections")
-                    {
-                        isBadLayout = true;
-                    }
+                    ////if avoidcollections is in D4, then D9 has to be avoidcollections (repeated messages)
+                    //else if(d4MessageGoal == "AvoidCollections" && d9MessageGoal != "AvoidCollections")
+                    //{
+                    //    isBadLayout = true;
+                    //}
 
                     // can't have cycle 1 or 2 D8 ads at the same time as avoidcollections
                     List<string> Cycle1And2Goals = new List<string>() { "PaymentPlanQR", "PaymentPlanQRCycle2", "PaymentPlanNewCharges", "PaymentPlanNewChargesCycle2" };
@@ -216,13 +216,13 @@ namespace TestMessageCombinations
 
         private static bool LayoutAlreadyExists(StatementLayout currentlayout, List<StatementLayout> layouts)
         {
-            var messageQuery = from s in layouts
+            var layoutQuery = from s in layouts
                                where s.D4Message == currentlayout.D4Message
                                && s.D8Message == currentlayout.D8Message
                                && s.D9Message == currentlayout.D9Message
                                select s;
 
-            if (messageQuery.Count() > 0)
+            if (layoutQuery.Count() > 0)
                 return true;
             else
                 return false;
