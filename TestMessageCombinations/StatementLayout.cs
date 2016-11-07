@@ -25,5 +25,26 @@ namespace TestMessageCombinations
         {
             return D4Message.ToString() + "|" + D8Message.ToString() + "|" + D9Message.ToString();
         }
+
+        public List<Message> GetMessages()
+        {
+            return new List<Message>() { D4Message, D8Message, D9Message };
+        }
+
+        public Message GetMessageByArea(string key)
+        {
+            switch (key)
+            {
+                case "D8":
+                    return D8Message;
+                case "D9":
+                    return D9Message;
+                case "D4":
+                    return D4Message;
+                default:
+                    throw new Exception("Unknown message area requested: " + key);
+            }
+
+        }
     }
 }

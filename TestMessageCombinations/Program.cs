@@ -72,16 +72,61 @@ namespace TestMessageCombinations
                     }
                 }
             }
+            RemoveImpossibleLayouts(PossibleLayouts);
+
             foreach(StatementLayout s in PossibleLayouts)
             {
                 Console.WriteLine(s);
-
             }
             Console.WriteLine("Total number of statement layouts: " + PossibleLayouts.Count());
             Console.ReadLine();
 
             WriteToCsv(PossibleLayouts);
 
+        }
+
+        private static void RemoveImpossibleLayouts(List<StatementLayout> possibleLayouts)
+        {
+            Dictionary<string, int> GoalRankings = new Dictionary<string, int>()
+            {
+                { "PayOnline", 1 },
+                { "PaymentPlans", 2 },
+                { "AvoidCollections", 3 },
+                { "RecurringPayments", 4 },
+                { "CharityCare", 5 },
+                { "PatientPortal", 6 }
+                //"Default"
+            };
+
+            Dictionary<string, int> MessageAreaRankings = new Dictionary<string, int>()
+            {
+                {"D8", 1 },
+                {"D4", 2 },
+                {"D9", 3 }
+
+            };
+
+
+            // Check for repeated messages
+            for (int index = 0; index < possibleLayouts.Count; index++)
+            {
+                StatementLayout s = possibleLayouts[index];
+                List<Message> messageList = s.GetMessages();
+                var duplicateMessageQuery = messageList.GroupBy(x => x.Goal).Select(n => new { MessageName = n.Key, MessageCount = n.Count() }).Where(y => y.MessageCount > 1 && y.MessageName != "AvoidCollections" && y.MessageName != "Default");
+                
+                if(duplicateMessageQuery.Count() > 0)
+                {
+                    possibleLayouts.RemoveAt(index);
+                    index--;
+                }
+            }
+
+            // Check for mismatched rankings
+            //for (int index = 0; index < possibleLayouts.Count; index++)
+            //{
+            //    StatementLayout s = possibleLayouts[index];
+                
+            //}
         }
 
         private static void WriteToCsv(List<StatementLayout> possibleLayouts)
