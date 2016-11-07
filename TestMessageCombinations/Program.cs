@@ -94,7 +94,13 @@ namespace TestMessageCombinations
                 { "AvoidCollections", 3 },
                 { "RecurringPayments", 4 },
                 { "CharityCare", 5 },
-                { "PatientPortal", 6 }
+                { "PatientPortal", 6 },
+                { "Default", 7 },
+                { "PaymentPlanQRCycle2", 0 },
+                { "PaymentPlanQRCycle3", 0 },
+                { "PaymentPlanNewCharges", 0 },
+                { "PaymentPlanNewChargesCycle2", 0 },
+                { "PaymentPlanNewChargesCycle3", 0 }
                 //"Default"
             };
 
@@ -122,11 +128,35 @@ namespace TestMessageCombinations
             }
 
             // Check for mismatched rankings
-            //for (int index = 0; index < possibleLayouts.Count; index++)
-            //{
-            //    StatementLayout s = possibleLayouts[index];
-                
-            //}
+            for (int index = 0; index < possibleLayouts.Count; index++)
+            {
+                bool isBadLayout = false;
+
+                StatementLayout currentLayout = possibleLayouts[index];
+
+                // get rankings of messages in current layout
+                string d9MessageGoal = currentLayout.D9Message.Goal;
+                int d9MessageRank = GoalRankings[d9MessageGoal];
+
+                string d8MessageGoal = currentLayout.D8Message.Goal;
+                int d8MessageRank = GoalRankings[d8MessageGoal];
+
+                string d4MessageGoal = currentLayout.D4Message.Goal;
+                int d4MessageRank = GoalRankings[d4MessageGoal];
+
+                //check if other message areas have a lower-ranked message in their areas
+                if (d4MessageRank <= d8MessageRank || d9MessageRank <= d4MessageRank || d9MessageRank <= d8MessageRank)
+                {
+                    isBadLayout = true;
+                }
+
+                if (isBadLayout)
+                {
+                    possibleLayouts.RemoveAt(index);
+                    index--;
+                }
+
+            }
         }
 
         private static void WriteToCsv(List<StatementLayout> possibleLayouts)
